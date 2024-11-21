@@ -374,10 +374,10 @@ std::optional<bool> send_panda_states(PubMaster *pm, const std::vector<Panda *> 
     ps.setIgnitionLine(health.ignition_line_pkt);
     ps.setIgnitionCan(health.ignition_can_pkt);
     ps.setControlsAllowed(health.controls_allowed_pkt);
-    ps.setGasInterceptorDetected(health.gas_interceptor_detected_pkt);
+    //ps.setGasInterceptorDetected(health.gas_interceptor_detected_pkt);
     ps.setTxBufferOverflow(health.tx_buffer_overflow_pkt);
     ps.setRxBufferOverflow(health.rx_buffer_overflow_pkt);
-    ps.setGmlanSendErrs(health.gmlan_send_errs_pkt);
+    //ps.setGmlanSendErrs(health.gmlan_send_errs_pkt);
     ps.setPandaType(panda->hw_type);
     ps.setSafetyModel(cereal::CarParams::SafetyModel(health.safety_mode_pkt));
     ps.setSafetyParam(health.safety_param_pkt);
@@ -386,9 +386,9 @@ std::optional<bool> send_panda_states(PubMaster *pm, const std::vector<Panda *> 
     ps.setHeartbeatLost((bool)(health.heartbeat_lost_pkt));
     ps.setAlternativeExperience(health.alternative_experience_pkt);
     ps.setHarnessStatus(cereal::PandaState::HarnessStatus(health.car_harness_status_pkt));
-    ps.setInterruptLoad(health.interrupt_load);
+    ps.setInterruptLoad(health.interrupt_load_pkt);
     ps.setFanPower(health.fan_power);
-    ps.setSafetyRxChecksInvalid((bool)(health.safety_rx_checks_invalid));
+    ps.setSafetyRxChecksInvalid((bool)(health.safety_rx_checks_invalid_pkt));
 
     std::array<cereal::PandaState::PandaCanState::Builder, PANDA_CAN_CNT> cs = {ps.initCanState0(), ps.initCanState1(), ps.initCanState2()};
 
