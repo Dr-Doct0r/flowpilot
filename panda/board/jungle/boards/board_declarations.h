@@ -4,16 +4,17 @@ typedef void (*board_set_led)(uint8_t color, bool enabled);
 typedef void (*board_board_tick)(void);
 typedef bool (*board_get_button)(void);
 typedef void (*board_set_panda_power)(bool enabled);
+typedef void (*board_set_panda_individual_power)(uint8_t port_num, bool enabled);
 typedef void (*board_set_ignition)(bool enabled);
 typedef void (*board_set_individual_ignition)(uint8_t bitmask);
 typedef void (*board_set_harness_orientation)(uint8_t orientation);
 typedef void (*board_set_can_mode)(uint8_t mode);
 typedef void (*board_enable_can_transciever)(uint8_t transciever, bool enabled);
+typedef void (*board_enable_header_pin)(uint8_t pin_num, bool enabled);
 typedef float (*board_get_channel_power)(uint8_t channel);
 typedef uint16_t (*board_get_sbu_mV)(uint8_t channel, uint8_t sbu);
 
 struct board {
-  const char *board_type;
   const bool has_canfd;
   const bool has_sbu_sense;
   const uint16_t avdd_mV;
@@ -22,17 +23,18 @@ struct board {
   board_board_tick board_tick;
   board_get_button get_button;
   board_set_panda_power set_panda_power;
+  board_set_panda_individual_power set_panda_individual_power;
   board_set_ignition set_ignition;
   board_set_individual_ignition set_individual_ignition;
   board_set_harness_orientation set_harness_orientation;
   board_set_can_mode set_can_mode;
   board_enable_can_transciever enable_can_transciever;
+  board_enable_header_pin enable_header_pin;
   board_get_channel_power get_channel_power;
   board_get_sbu_mV get_sbu_mV;
 
   // TODO: shouldn't need these
   bool has_spi;
-  bool has_hw_gmlan;
 };
 
 // ******************* Definitions ********************
@@ -67,4 +69,14 @@ uint8_t ignition = 0U;
 
 void unused_set_individual_ignition(uint8_t bitmask) {
   UNUSED(bitmask);
+}
+
+void unused_board_enable_header_pin(uint8_t pin_num, bool enabled) {
+  UNUSED(pin_num);
+  UNUSED(enabled);
+}
+
+void unused_set_panda_individual_power(uint8_t port_num, bool enabled) {
+  UNUSED(port_num);
+  UNUSED(enabled);
 }

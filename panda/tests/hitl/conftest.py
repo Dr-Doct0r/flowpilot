@@ -58,7 +58,7 @@ def init_all_pandas():
 
   print(f"{len(_all_pandas)} total pandas")
 init_all_pandas()
-_all_panda_serials = list(sorted(_all_pandas.keys()))
+_all_panda_serials = sorted(_all_pandas.keys())
 
 
 def init_jungle():
@@ -86,18 +86,12 @@ def pytest_configure(config):
   config.addinivalue_line(
     "markers", "panda_expect_can_error: mark test to ignore CAN health errors"
   )
-  config.addinivalue_line(
-    "markers", "expected_logs(amount, ...): mark test to expect a certain amount of panda logs"
-  )
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(items):
   for item in items:
-    if item.get_closest_marker('execution_timeout') is None:
-      item.add_marker(pytest.mark.execution_timeout(10))
-
-    item.add_marker(pytest.mark.setup_timeout(20))
-    item.add_marker(pytest.mark.teardown_timeout(20))
+    if item.get_closest_marker('timeout') is None:
+      item.add_marker(pytest.mark.timeout(60))
 
     # xdist grouping by panda
     serial = item.name.split("serial=")[1].split(",")[0]
@@ -144,8 +138,6 @@ def func_fixture_panda(request, module_panda):
 
   # TODO: reset is slow (2+ seconds)
   p.reset()
-  logs = p.get_logs()
-  last_log_id = logs[-1]['id'] if len(logs) > 0 else 0
 
   # ensure FW hasn't changed
   assert p.up_to_date()
@@ -172,20 +164,6 @@ def func_fixture_panda(request, module_panda):
   # Check for faults
   assert p.health()['faults'] == 0
   assert p.health()['fault_status'] == 0
-
-  # Make sure that there are no unexpected logs
-  min_expected_logs = 0
-  max_expected_logs = 0
-  mark = request.node.get_closest_marker('expected_logs')
-  if mark:
-    assert len(mark.args) > 0, "Missing expected logs argument in mark"
-    min_expected_logs = mark.args[0]
-    max_expected_logs = mark.args[1] if len(mark.args) > 1 else min_expected_logs
-
-  logs.extend(p.get_logs(True))
-  log_id = logs[-1]['id'] if len(logs) > 0 else last_log_id
-
-  assert min_expected_logs <= ((log_id - last_log_id) % 0xFFFE) <= max_expected_logs, f"Unexpected amount of logs. Last 5: {logs[-5:]}"
 
   # Check for SPI errors
   #assert p.health()['spi_checksum_error_count'] == 0

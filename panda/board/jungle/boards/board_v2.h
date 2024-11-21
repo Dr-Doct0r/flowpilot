@@ -1,3 +1,6 @@
+// ///////////////////////// //
+// Jungle board v2 (STM32H7) //
+// ///////////////////////// //
 
 const gpio_t power_pins[] = {
   {.bank = GPIOA, .pin = 0},
@@ -108,7 +111,7 @@ void board_v2_set_harness_orientation(uint8_t orientation) {
 }
 
 void board_v2_enable_can_transciever(uint8_t transciever, bool enabled) {
-  switch (transciever){
+  switch (transciever) {
     case 1U:
       set_gpio_output(GPIOG, 11, !enabled);
       break;
@@ -124,6 +127,14 @@ void board_v2_enable_can_transciever(uint8_t transciever, bool enabled) {
     default:
       print("Invalid CAN transciever ("); puth(transciever); print("): enabling failed\n");
       break;
+  }
+}
+
+void board_v2_enable_header_pin(uint8_t pin_num, bool enabled) {
+  if (pin_num < 8U) {
+    set_gpio_output(GPIOG, pin_num, enabled);
+  } else {
+    print("Invalid pin number ("); puth(pin_num); print("): enabling failed\n");
   }
 }
 
@@ -170,9 +181,26 @@ void board_v2_set_can_mode(uint8_t mode) {
 }
 
 bool panda_power = false;
+uint8_t panda_power_bitmask = 0U;
 void board_v2_set_panda_power(bool enable) {
   panda_power = enable;
   gpio_set_all_output(power_pins, sizeof(power_pins) / sizeof(gpio_t), enable);
+  if (enable) {
+    panda_power_bitmask = 0xFFU;
+  } else {
+    panda_power_bitmask = 0U;
+  }
+}
+
+void board_v2_set_panda_individual_power(uint8_t port_num, bool enable) {
+  port_num -= 1U;
+  if (port_num < 6U) {
+    panda_power_bitmask &= ~(1U << port_num);
+    panda_power_bitmask |= (enable ? 1U : 0U) << port_num;
+  } else {
+    print("Invalid port number ("); puth(port_num); print("): enabling failed\n");
+  }
+  gpio_set_bitmask(power_pins, sizeof(power_pins) / sizeof(gpio_t), (uint32_t)panda_power_bitmask);
 }
 
 bool board_v2_get_button(void) {
@@ -265,12 +293,21 @@ void board_v2_init(void) {
   set_gpio_mode(GPIOF, 4, MODE_ANALOG);
   set_gpio_mode(GPIOC, 0, MODE_ANALOG);
   set_gpio_mode(GPIOC, 1, MODE_ANALOG);
+
+  // Header pins
+  set_gpio_mode(GPIOG, 0, MODE_OUTPUT);
+  set_gpio_mode(GPIOG, 1, MODE_OUTPUT);
+  set_gpio_mode(GPIOG, 2, MODE_OUTPUT);
+  set_gpio_mode(GPIOG, 3, MODE_OUTPUT);
+  set_gpio_mode(GPIOG, 4, MODE_OUTPUT);
+  set_gpio_mode(GPIOG, 5, MODE_OUTPUT);
+  set_gpio_mode(GPIOG, 6, MODE_OUTPUT);
+  set_gpio_mode(GPIOG, 7, MODE_OUTPUT);
 }
 
 void board_v2_tick(void) {}
 
 const board board_v2 = {
-  .board_type = "V2",
   .has_canfd = true,
   .has_sbu_sense = true,
   .avdd_mV = 3300U,
@@ -279,11 +316,13 @@ const board board_v2 = {
   .board_tick = &board_v2_tick,
   .get_button = &board_v2_get_button,
   .set_panda_power = &board_v2_set_panda_power,
+  .set_panda_individual_power = &board_v2_set_panda_individual_power,
   .set_ignition = &board_v2_set_ignition,
   .set_individual_ignition = &board_v2_set_individual_ignition,
   .set_harness_orientation = &board_v2_set_harness_orientation,
   .set_can_mode = &board_v2_set_can_mode,
   .enable_can_transciever = &board_v2_enable_can_transciever,
+  .enable_header_pin = &board_v2_enable_header_pin,
   .get_channel_power = &board_v2_get_channel_power,
   .get_sbu_mV = &board_v2_get_sbu_mV,
 };

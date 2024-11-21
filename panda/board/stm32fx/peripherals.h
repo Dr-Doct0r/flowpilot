@@ -36,14 +36,9 @@ void common_init_gpio(void) {
 
   gpio_usb_init();
 
-   // B8,B9: CAN 1
-  #ifdef STM32F4
-    set_gpio_alternate(GPIOB, 8, GPIO_AF8_CAN1);
-    set_gpio_alternate(GPIOB, 9, GPIO_AF8_CAN1);
-  #else
-    set_gpio_alternate(GPIOB, 8, GPIO_AF9_CAN1);
-    set_gpio_alternate(GPIOB, 9, GPIO_AF9_CAN1);
-  #endif
+  // B8,B9: CAN 1
+  set_gpio_alternate(GPIOB, 8, GPIO_AF8_CAN1);
+  set_gpio_alternate(GPIOB, 9, GPIO_AF8_CAN1);
 }
 
 void flasher_peripherals_init(void) {
@@ -55,37 +50,40 @@ void flasher_peripherals_init(void) {
 
 // Peripheral initialization
 void peripherals_init(void) {
-  // enable GPIOB, UART2, CAN, USB clock
+  // enable GPIO(A,B,C,D)
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN;
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN;
 
+  // Supplemental
   RCC->AHB1ENR |= RCC_AHB1ENR_DMA2EN;
+  RCC->APB1ENR |= RCC_APB1ENR_PWREN;   // for RTC config
+  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+
+  // Connectivity
+  RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
+  RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
   RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
   RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
-  #ifndef PEDAL
-    RCC->APB1ENR |= RCC_APB1ENR_UART5EN;
-  #endif
+  RCC->APB1ENR |= RCC_APB1ENR_UART5EN;
   RCC->APB1ENR |= RCC_APB1ENR_CAN1EN;
   RCC->APB1ENR |= RCC_APB1ENR_CAN2EN;
-  #ifdef CAN3
-    RCC->APB1ENR |= RCC_APB1ENR_CAN3EN;
-  #endif
+  RCC->APB1ENR |= RCC_APB1ENR_CAN3EN;
+
+  // Analog
+  RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
   RCC->APB1ENR |= RCC_APB1ENR_DACEN;
+
+  // Timers
+  RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;  // clock source timer
   RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;  // main counter
   RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;  // pedal and fan PWM
   RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;  // IR PWM
   RCC->APB1ENR |= RCC_APB1ENR_TIM5EN;  // k-line init
   RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;  // interrupt timer
-  RCC->APB1ENR |= RCC_APB1ENR_TIM12EN; // gmlan_alt
-  RCC->APB1ENR |= RCC_APB1ENR_PWREN;   // for RTC config
-  RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
-  RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;  // clock source timer
-  RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
-  RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
-  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
   RCC->APB2ENR |= RCC_APB2ENR_TIM9EN;  // slow loop
+  RCC->APB1ENR |= RCC_APB1ENR_TIM12EN; // gmlan_alt
 }
 
 void enable_interrupt_timer(void) {

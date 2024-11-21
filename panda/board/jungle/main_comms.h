@@ -29,7 +29,7 @@ int get_jungle_health_pkt(void *dat) {
 }
 
 // send on serial, first byte to select the ring
-void comms_endpoint2_write(uint8_t *data, uint32_t len) {
+void comms_endpoint2_write(const uint8_t *data, uint32_t len) {
   UNUSED(data);
   UNUSED(len);
 }
@@ -58,6 +58,10 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
     case 0xa2:
       current_board->set_ignition((req->param1 == 1U));
       break;
+    // **** 0xa0: Set panda power per channel by bitmask.
+    case 0xa3:
+      current_board->set_panda_individual_power(req->param1, (req->param2 > 0U));
+      break;
     // **** 0xa8: get microsecond timer
     case 0xa8:
       time = microsecond_timer_get();
@@ -80,6 +84,7 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
     case 0xc2:
       COMPILE_TIME_ASSERT(sizeof(can_health_t) <= USBPACKET_MAX_SIZE);
       if (req->param1 < 3U) {
+        update_can_health_pkt(req->param1, 0U);
         can_health[req->param1].can_speed = (bus_config[req->param1].can_speed / 10U);
         can_health[req->param1].can_data_speed = (bus_config[req->param1].can_data_speed / 10U);
         can_health[req->param1].canfd_enabled = bus_config[req->param1].canfd_enabled;
@@ -187,7 +192,7 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
     // **** 0xe0: debug read
     case 0xe0:
       // read
-      while ((resp_len < MIN(req->length, USBPACKET_MAX_SIZE)) && getc(get_ring_by_number(0), (char*)&resp[resp_len])) {
+      while ((resp_len < MIN(req->length, USBPACKET_MAX_SIZE)) && get_char(get_ring_by_number(0), (char*)&resp[resp_len])) {
         ++resp_len;
       }
       break;
@@ -221,6 +226,10 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
     case 0xf5:
       can_silent = (req->param1 > 0U) ? ALL_CAN_SILENT : ALL_CAN_LIVE;
       can_init_all();
+      break;
+    // **** 0xf7: enable/disable header pin by number
+    case 0xf7:
+      current_board->enable_header_pin(req->param1, req->param2 > 0U);
       break;
     // **** 0xf9: set CAN FD data bitrate
     case 0xf9:

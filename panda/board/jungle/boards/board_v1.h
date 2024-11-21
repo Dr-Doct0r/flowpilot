@@ -1,6 +1,9 @@
+// ///////////////////////// //
+// Jungle board v1 (STM32F4) //
+// ///////////////////////// //
 
 void board_v1_set_led(uint8_t color, bool enabled) {
-  switch (color){
+  switch (color) {
     case LED_RED:
       set_gpio_output(GPIOC, 9, !enabled);
       break;
@@ -16,7 +19,7 @@ void board_v1_set_led(uint8_t color, bool enabled) {
 }
 
 void board_v1_enable_can_transciever(uint8_t transciever, bool enabled) {
-  switch (transciever){
+  switch (transciever) {
     case 1U:
       set_gpio_output(GPIOC, 1, !enabled);
       break;
@@ -155,7 +158,6 @@ void board_v1_init(void) {
 void board_v1_tick(void) {}
 
 const board board_v1 = {
-  .board_type = "V1",
   .has_canfd = false,
   .has_sbu_sense = false,
   .avdd_mV = 3300U,
@@ -164,11 +166,13 @@ const board board_v1 = {
   .board_tick = &board_v1_tick,
   .get_button = &board_v1_get_button,
   .set_panda_power = &board_v1_set_panda_power,
+  .set_panda_individual_power = &unused_set_panda_individual_power,
   .set_ignition = &board_v1_set_ignition,
   .set_individual_ignition = &unused_set_individual_ignition,
   .set_harness_orientation = &board_v1_set_harness_orientation,
   .set_can_mode = &board_v1_set_can_mode,
   .enable_can_transciever = &board_v1_enable_can_transciever,
+  .enable_header_pin = &unused_board_enable_header_pin,
   .get_channel_power = &board_v1_get_channel_power,
   .get_sbu_mV = &board_v1_get_sbu_mV,
 };

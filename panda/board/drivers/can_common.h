@@ -28,8 +28,8 @@ extern int can_live;
 extern int pending_can_live;
 
 // must reinit after changing these
-extern int can_loopback;
 extern int can_silent;
+extern bool can_loopback;
 
 // Ignition detected from CAN meessages
 bool ignition_can = false;
@@ -40,8 +40,8 @@ uint32_t ignition_can_cnt = 0U;
 
 int can_live = 0;
 int pending_can_live = 0;
-int can_loopback = 0;
 int can_silent = ALL_CAN_SILENT;
+bool can_loopback = false;
 
 // ******************* functions prototypes *********************
 bool can_init(uint8_t can_number);
@@ -52,17 +52,22 @@ void process_can(uint8_t can_number);
   CANPacket_t elems_##x[size]; \
   can_ring can_##x = { .w_ptr = 0, .r_ptr = 0, .fifo_size = (size), .elems = (CANPacket_t *)&(elems_##x) };
 
+#define CAN_RX_BUFFER_SIZE 4096U
+#define CAN_TX_BUFFER_SIZE 416U
+#define GMLAN_TX_BUFFER_SIZE 416U
+
 #ifdef STM32H7
-__attribute__((section(".ram_d1"))) can_buffer(rx_q, 0x1000)
-__attribute__((section(".ram_d1"))) can_buffer(tx2_q, 0x1A0)
-__attribute__((section(".ram_d2"))) can_buffer(txgmlan_q, 0x1A0)
+// ITCM RAM and DTCM RAM are the fastest for Cortex-M7 core access
+__attribute__((section(".axisram"))) can_buffer(rx_q, CAN_RX_BUFFER_SIZE)
+__attribute__((section(".itcmram"))) can_buffer(tx1_q, CAN_TX_BUFFER_SIZE)
+__attribute__((section(".itcmram"))) can_buffer(tx2_q, CAN_TX_BUFFER_SIZE)
 #else
-can_buffer(rx_q, 0x1000)
-can_buffer(tx2_q, 0x1A0)
-can_buffer(txgmlan_q, 0x1A0)
+can_buffer(rx_q, CAN_RX_BUFFER_SIZE)
+can_buffer(tx1_q, CAN_TX_BUFFER_SIZE)
+can_buffer(tx2_q, CAN_TX_BUFFER_SIZE)
 #endif
-can_buffer(tx1_q, 0x1A0)
-can_buffer(tx3_q, 0x1A0)
+can_buffer(tx3_q, CAN_TX_BUFFER_SIZE)
+can_buffer(txgmlan_q, GMLAN_TX_BUFFER_SIZE)
 // FIXME:
 // cppcheck-suppress misra-c2012-9.3
 can_ring *can_queues[] = {&can_tx1_q, &can_tx2_q, &can_tx3_q, &can_txgmlan_q};
@@ -90,7 +95,7 @@ bool can_pop(can_ring *q, CANPacket_t *elem) {
   return ret;
 }
 
-bool can_push(can_ring *q, CANPacket_t *elem) {
+bool can_push(can_ring *q, const CANPacket_t *elem) {
   bool ret = false;
   uint32_t next_w_ptr;
 
@@ -128,7 +133,7 @@ bool can_push(can_ring *q, CANPacket_t *elem) {
   return ret;
 }
 
-uint32_t can_slots_empty(can_ring *q) {
+uint32_t can_slots_empty(const can_ring *q) {
   uint32_t ret = 0;
 
   ENTER_CRITICAL();
@@ -203,9 +208,9 @@ void ignition_can_hook(CANPacket_t *to_push) {
 
   if (bus == 0) {
     // GM exception
-    if ((addr == 0x160) && (len == 5)) {
-      // this message isn't all zeros when ignition is on
-      ignition_can = GET_BYTES(to_push, 0, 4) != 0U;
+    if ((addr == 0x1F1) && (len == 8)) {
+      // SystemPowerMode (2=Run, 3=Crank Request)
+      ignition_can = (GET_BYTE(to_push, 0) & 0x2U) != 0U;
       ignition_can_cnt = 0U;
     }
 
@@ -233,7 +238,7 @@ bool can_tx_check_min_slots_free(uint32_t min) {
     (can_slots_empty(&can_txgmlan_q) >= min);
 }
 
-uint8_t calculate_checksum(uint8_t *dat, uint32_t len) {
+uint8_t calculate_checksum(const uint8_t *dat, uint32_t len) {
   uint8_t checksum = 0U;
   for (uint32_t i = 0U; i < len; i++) {
     checksum ^= dat[i];
@@ -272,10 +277,10 @@ void can_send(CANPacket_t *to_push, uint8_t bus_number, bool skip_tx_hook) {
   }
 }
 
-bool is_speed_valid(uint32_t speed, const uint32_t *speeds, uint8_t len) {
+bool is_speed_valid(uint32_t speed, const uint32_t *all_speeds, uint8_t len) {
   bool ret = false;
   for (uint8_t i = 0U; i < len; i++) {
-    if (speeds[i] == speed) {
+    if (all_speeds[i] == speed) {
       ret = true;
     }
   }
