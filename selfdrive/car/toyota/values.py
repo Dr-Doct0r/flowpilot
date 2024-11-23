@@ -5,7 +5,7 @@ from typing import Dict, List, Union
 
 from cereal import car
 from common.conversions import Conversions as CV
-from selfdrive.car import dbc_dict
+from selfdrive.car import AngleRateLimit, dbc_dict
 from selfdrive.car.docs_definitions import CarFootnote, CarInfo, Column, CarPart, CarParts
 from selfdrive.car.fw_query_definitions import FwQueryConfig, Request, StdQueries
 
@@ -21,6 +21,8 @@ class CarControllerParams:
   STEER_STEP = 1
   STEER_MAX = 1500
   STEER_ERROR_MAX = 350     # max delta between torque cmd and torque motor
+  ANGLE_RATE_LIMIT_UP = AngleRateLimit(speed_bp=[5, 25], angle_v=[0.3, 0.15])
+  ANGLE_RATE_LIMIT_DOWN = AngleRateLimit(speed_bp=[5, 25], angle_v=[0.36, 0.26])
 
   def __init__(self, CP):
     if CP.lateralTuning.which == 'torque':
@@ -34,6 +36,7 @@ class CarControllerParams:
 class ToyotaFlags(IntFlag):
   HYBRID = 1
   SMART_DSU = 2
+  DISABLE_RADAR = 4
 
 
 class CAR:
