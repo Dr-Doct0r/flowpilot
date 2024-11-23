@@ -7,11 +7,12 @@
 #include <sstream>
 #include <vector>
 #include <mutex>
-#include <cstring>
 #include <iterator>
+#include <cstring>
+#include <clocale>
 
-#include "common.h"
-#include "common_dbc.h"
+#include "opendbc/can/common.h"
+#include "opendbc/can/common_dbc.h"
 
 std::regex bo_regexp(R"(^BO_ (\w+) (\w+) *: (\w+) (\w+))");
 std::regex sg_regexp(R"(^SG_ (\w+) : (\d+)\|(\d+)@(\d+)([\+|\-]) \(([0-9.+\-eE]+),([0-9.+\-eE]+)\) \[([0-9.+\-eE]+)\|([0-9.+\-eE]+)\] \"(.*)\" (.*))");
@@ -106,6 +107,7 @@ DBC* dbc_parse_from_stream(const std::string &dbc_name, std::istream &stream, Ch
   std::map<uint32_t, std::vector<Signal>> signals;
   DBC* dbc = new DBC;
   dbc->name = dbc_name;
+  std::setlocale(LC_NUMERIC, "C");
 
   // used to find big endian LSB from MSB and size
   std::vector<int> be_bits;

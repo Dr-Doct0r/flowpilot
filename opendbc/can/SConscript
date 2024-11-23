@@ -1,15 +1,7 @@
-Import('env', 'envCython')
+Import('env', 'envCython', 'cereal', 'common')
 
 import os
 
-# Build Capnp Definitions
-msg_capnp = env.Command(
-    target=['msg.capnp.c++', 'msg.capnp.h'],
-    source=["msg.capnp"],
-    action='capnp compile -oc++ $SOURCE'
-)
-
-common = ''
 envDBC = env.Clone()
 dbc_file_path = '-DDBC_FILE_PATH=\'"%s"\'' % (envDBC.Dir("..").abspath)
 envDBC['CXXFLAGS'] += [dbc_file_path]

@@ -1,10 +1,11 @@
-#include <cassert>
-#include <utility>
 #include <algorithm>
-#include <map>
+#include <cassert>
 #include <cmath>
+#include <map>
+#include <stdexcept>
+#include <utility>
 
-#include "common.h"
+#include "opendbc/can/common.h"
 
 
 void set_value(std::vector<uint8_t> &msg, const Signal &sig, int64_t ival) {
@@ -34,7 +35,7 @@ CANPacker::CANPacker(const std::string& dbc_name) {
   for (const auto& msg : dbc->msgs) {
     message_lookup[msg.address] = msg;
     for (const auto& sig : msg.sigs) {
-      signal_lookup[std::make_pair(msg.address, std::string(sig.name))] = sig;
+      signal_lookup[std::make_pair(msg.address, sig.name)] = sig;
     }
   }
   init_crc_lookup_tables();
